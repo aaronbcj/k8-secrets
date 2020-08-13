@@ -1,0 +1,22 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: k8-config
+data:
+  application.yaml: |-
+    hello: Hello All
+    greeting:
+      message: Greetings All
+      farewell: Farewell All
+    ---
+    spring:
+      profiles: dev
+    greeting:
+      message: Greetings Dev
+      farewell: Farewell Dev
+    ---
+    spring:
+      profiles: prod
+    greeting:
+      farewell: Farewell Ops
+      message: Greetings Ops

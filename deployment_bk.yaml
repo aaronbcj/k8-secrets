@@ -1,0 +1,136 @@
+---
+
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: default
+  name: namespace-reader
+rules:
+  - apiGroups: ["", "extensions", "apps"]
+    resources: ["configmaps", "pods", "services", "endpoints", "secrets"]
+    verbs: ["get", "list", "watch"]
+
+---
+
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: namespace-reader-binding
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: default
+  apiGroup: ""
+roleRef:
+  kind: Role
+  name: namespace-reader
+  apiGroup: ""
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kub-dep
+  labels:
+    app: kub-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kub-dep
+  template:
+    metadata:
+      labels:
+        app: kub-dep
+    spec:
+        containers:
+        - name: kub-cont
+          image: kub:v1
+          env:
+          - name: SPRING_PROFILES_ACTIVE
+            value: dev
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: configmount
+            mountPath: /etc/configmount
+            readOnly: true
+        volumes:
+          - name: configmount
+          configMap:
+          name: k8config
+          items:
+          - key: application.yaml
+            path: application.yaml
+          - key: application-dev.yaml
+            path: application-dev.yaml
+          - key: application-prod.yaml
+            path: application-prod.yaml
+
+        - name: secret-mount
+          secret:
+            secretName: k8-secret            
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8-dep
+  labels:
+    app: k8-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8-dep
+  template:
+    metadata:
+      labels:
+        app: k8-dep
+    spec:
+      containers:
+      - name: k8-dep
+        image: aaronbcj/k8-img:1.0
+        imagePullPolicy: Always
+        env:
+         - name: SECRETS_CRED_USER_NAME
+           value: creduser    
+        volumeMounts:
+        - name: k8-mount
+          mountPath: /env/config
+      volumes:
+        - name: k8-mount
+          configMap:
+            name: k8-config
+            items:
+            - key: application.yaml
+              path: keys
+              
+---              
+kind: Service
+apiVersion: v1
+metadata:
+  name: kub-svc
+spec:
+  selector:
+    app: kub-svc
+  ports:
+  - name: http
+    port: 8080
+    nodePort: 30020
+  type: NodePort        
+  
+  ---
+  
+  #by default, pods use system's serviceaccount called default in default namespace. Giving it admin access 
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: full-control
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io

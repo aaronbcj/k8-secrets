@@ -1,0 +1,21 @@
+### kubectl create configmap k8-config --from-literal=hello="Hello literal" --from-file=./my-configs/
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: k8-config
+  namespace: default
+data:
+  hello: Hello All
+  application.yaml: |-
+    greeting:
+      message: Greetings All
+      farewell: Farewell All
+  application-dev.yaml: |-
+    greeting:
+      message: Greetings Dev
+      farewell: Farewell Dev
+  application-prod.yaml: |- 
+    greeting:
+      farewell: Farewell Ops
+      message: Greetings Ops

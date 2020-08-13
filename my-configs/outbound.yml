@@ -1,0 +1,7 @@
+hello: yaml-out-Hello All
+greeting:
+  message: yaml-out-Greetings All
+  farewell: yaml-out-Farewell All
+default:
+  config:
+    key: yaml-out-key
