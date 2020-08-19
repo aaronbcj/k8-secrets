@@ -9,11 +9,13 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.context.config.ConfigFileApplicationListener;
 //import org.springframework.boot.context.config.ConfigFileApplicationListener;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.StandardEnvironment;
 
 
@@ -21,9 +23,10 @@ public class CXPConfigPostProcessor implements EnvironmentPostProcessor, Ordered
 
 	private static final Logger logger = LoggerFactory.getLogger(CXPConfigPostProcessor.class);
 	
-	final String CONFIG_NAME_PROPERTY = "spring.config.name";
+	final String CONFIG_NAME = "spring.config.name";
 	final String SPRING_CLOUD_K8S_CONFIG_ENABLED = "spring.cloud.kubernetes.config.enabled";
 	final String SPRING_CLOUD_K8S_CONFIG_PATHS = "spring.cloud.kubernetes.config.paths";
+	final String SPRING_CONFIG_ADDITIONAL_LOCATION = "spring.config.additional-location";
 	
 	@Override
 	public int getOrder() {
@@ -33,8 +36,7 @@ public class CXPConfigPostProcessor implements EnvironmentPostProcessor, Ordered
 	@Override
 	public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
 		
-		boolean k8sConfigEnabled = environment.getProperty(SPRING_CLOUD_K8S_CONFIG_ENABLED, Boolean.class,
-				false);
+		boolean k8sConfigEnabled = environment.getProperty(SPRING_CLOUD_K8S_CONFIG_ENABLED, Boolean.class, false);
 		final String CXP_CONFIG_BASEDIR = (k8sConfigEnabled? "k8." : "local.") + "config.basedir";
 		
 		if (k8sConfigEnabled) {
@@ -72,21 +74,30 @@ public class CXPConfigPostProcessor implements EnvironmentPostProcessor, Ordered
 						new MapPropertySource("envK8sConfigPostProcessorProperties", map));
 			}
 		}
+		
+		
+		System.out.println("ALP=" + environment.getProperty(SPRING_CONFIG_ADDITIONAL_LOCATION, String.class, "empty"));
+
+		for(PropertySource ps : environment.getPropertySources())
+		{
+			System.out.println("PS = " + ps.getName());
+		}
+		
 	}
 
 	private String[] getConfigNames(ConfigurableEnvironment environment) {
 		
 		String[] configNames = environment
-				.getProperty(CONFIG_NAME_PROPERTY, "application").split(",");
+				.getProperty(CONFIG_NAME, "application").split(",");
 		if (configNames.length <= 1) {
 			Optional<String> configNameProp = environment.getPropertySources().stream().filter(propertySource -> {
-				Object value = propertySource.getProperty(CONFIG_NAME_PROPERTY);
+				Object value = propertySource.getProperty(CONFIG_NAME);
 				if (value != null && value instanceof String) {
 					return ((String) value).contains(",");
 				}
 				return false;
 			}).map(propertySource -> (String) propertySource
-					.getProperty(CONFIG_NAME_PROPERTY)).findFirst();
+					.getProperty(CONFIG_NAME)).findFirst();
 			if (configNameProp.isPresent()) {
 				configNames = configNameProp.get().split(",");
 			}

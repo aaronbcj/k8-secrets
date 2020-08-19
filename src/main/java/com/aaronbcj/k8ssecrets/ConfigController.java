@@ -1,8 +1,11 @@
 package com.aaronbcj.k8ssecrets;
 
+import javax.annotation.Resource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.EnvironmentAware;
@@ -18,7 +21,9 @@ public class ConfigController  {
     
 	String vernumber = "1.0";
 		
-	@Autowired
+	@Autowired(required=false)
+	//@Qualifier("#${spring.profiles.active:def}")
+	@Resource(name="${spring.profiles.active:def}")
 	private KeyValue keyValue;
 	
 	@Autowired
@@ -39,31 +44,37 @@ public class ConfigController  {
 	
 	private String getConfig()
 	{
-		String userName = System.getenv().getOrDefault("SECRETS_CRED_USER_NAME", "user");
+		//String userName = System.getenv().getOrDefault("SECRETS_CRED_USER_NAME", "user");
 		//String accessToken = System.getenv().getOrDefault("SECRETS_CRED_USER_ACCESS_TOKEN", "token");
 		//String profile = System.getenv().getOrDefault("spring.profiles.active", "not-set");
 		
 		String activeProfiles = "null";
 		
 		  try { if(env!=null) activeProfiles = env.getActiveProfiles().length>0 ?
-		  env.getActiveProfiles()[0] : "env-not-set"; }catch(Exception e){
+		  env.getActiveProfiles()[0] : "default/not-set"; }catch(Exception e){
 			  activeProfiles="env-is-null";
 		  }
 		
-		String kv = "null";
+		String kv = "empty";
 		try {
 			kv = keyValue.getKey();
-		}catch(Exception e) {}
+		}catch(Exception e) {
+		
+		}
 		
 //		logger.info("\nusername is {}",userName);
 //		logger.info("\naccessToken is {}",accessToken);
 //		logger.info("\nprofile is {}",profile);
 //		logger.info("\nactive profile is {}",activeProfiles);
 //		vernumber="2.0";
-		String response = String.format("vernumber=%s, rootKey=%s, Actives=%s, hello=%s, message=%s, farewell=%s, user=%s, token=%s, config.key=%s, default.config.key=%s, springAppName=%s, newProperty=%s, secret1.key=%s, secret2.key=%s, secret2.def=%s, secret2.dev=%s, secret2.prod=%s", 
-				this.vernumber, keys.getRootKey(), activeProfiles, keys.getHello(), keys.getMessage(), keys.getFarewell(), 
-				userName, keys.getAccessToken() ,kv , keys.getDefaultConfigKey(), keys.getSpringAppName(), 
-				keys.getNewProperty(), keys.getSecret1(), keys.getSecret2Key(), keys.getSecret2Def(), keys.getSecret2Dev(), keys.getSecret2Prod());
+		String response = String.format("ActiveProfiles=%s, env_access_token=%s, keyValue=%s, "
+				+ "app.key1=%s, app.key2=%s, app.key3=%s, "
+				+ "browse.key1=%s, browse.key2=%s, browse.key3=%s, "
+				+ "secret.location1=%s, secret.location2=%s, secret.location3=%s ", 
+				activeProfiles, keys.getAccessToken(), kv,
+				keys.getAppKey1(), keys.getAppKey2(), keys.getAppKey3(), 
+				keys.getBrowseKey1(), keys.getBrowseKey2() , keys.getBrowseKey3() ,
+				keys.getSecretLocation1(), keys.getSecretLocation2(), keys.getSecretLocation3()); 
 		
 		System.out.println(response);
 		return response;

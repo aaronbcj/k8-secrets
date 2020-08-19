@@ -53,22 +53,25 @@ spec:
           imagePullPolicy: Always
           volumeMounts:
             - name: configmount
-            mountPath: /etc/configmount
-            readOnly: true
+              mountPath: /etc/configmount
+              readOnly: true
         volumes:
           - name: configmount
-          configMap:
-          name: k8config
-          items:
-          - key: application.yaml
-            path: application.yaml
-          - key: application-dev.yaml
-            path: application-dev.yaml
-          - key: application-prod.yaml
-            path: application-prod.yaml
+            configMap:
+            name: k8config
+            items:
+            - key: application.yaml
+              path: application.yaml
+            - key: application-dev.yaml
+              path: application-dev.yaml
+            - key: application-prod.yaml
+              path: application-prod.yaml
 
-        - name: secret-mount
-          secret:
+          - name: secret-mount
+            secret:
+            items:
+             - key: secret.yml
+               path: cxp-sealsecret.yaml
             secretName: k8-secret            
 ---
 apiVersion: apps/v1
@@ -119,9 +122,9 @@ spec:
     nodePort: 30020
   type: NodePort        
   
-  ---
-  
-  #by default, pods use system's serviceaccount called default in default namespace. Giving it admin access 
+---
+
+#by default, pods use system's serviceaccount called default in default namespace. Giving it admin access 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:

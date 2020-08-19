@@ -1,4 +1,4 @@
-cd C:\Users\Aaronbcj\Desktop\Aaron\Git\projects\k8s-secrets
+cd C:\Users\Aaronbcj\Desktop\Aaron\Git\projects\k8s-sec
 
 # delete and recreate once (if needed)
 minikube delete
@@ -6,56 +6,55 @@ minikube delete
 # env variable
 set KUBERNETES_NAMESPACE=default
 
-/*(1)******** to make use of docker for windows **********/
-minikube start --driver=docker --kubernetes-version v1.18.0
-
-# minikube config set driver docker
-# --extra-config=apiserver.Authorization.Mode=RBAC
-/*******************************************************/
-
-/*(2)******** to make use of minikube-docker daemon **********/
+/*(1.a)******** to make use of docker for windows **********/
+# minikube start --driver=docker --kubernetes-version v1.18.0
+---OR---
+/*(1.b)******** to make use of minikube-docker daemon **********/
 SET DOCKER_TLS_VERIFY=1
 SET DOCKER_HOST=tcp://127.0.0.1:32778
 SET DOCKER_CERT_PATH=C:\Users\Aaronbcj\.minikube\certs
 SET MINIKUBE_ACTIVE_DOCKERD=minikube
-minikube start 
+minikube start --kubernetes-version v1.18.3
 in PS> & minikube -p minikube docker-env | Invoke-Expression
 in CMD> @FOR /f "tokens=*" %i IN ('minikube -p minikube docker-env') DO @%i
 /***********************************************************/
-
+---OR---
 /*(3)*********** to make use of hyperV ******************/
 minikube start --vm-driver=hyperv --v=7 --alsologtostderr
 /*******************************************************/
 
-mvn clean install
+mvn clean package
 
-docker build -t aaronbcj/k8-img:1.0 .
-docker push aaronbcj/k8-img:1.0
+docker build -t aaronbcj/k8s-sec-img:1.0 .
+docker push aaronbcj/k8s-sec-img:1.0
 
-
-/***** create from files ******/
-kubectl create configmap k8-config --from-literal=hello="Hello literal" --from-file=./my-configs/
-kubectl create secret generic k8-secret --from-file=./my-secrets/
-kubectl get configmaps k8-config -o yaml
-kubectl get secret k8-secret -o yaml
-/****************************************/
-
-kubectl apply -f configmap.yaml
-kubectl apply -f deployment.yaml
-kubectl apply -f service.yaml
+kubectl apply -f ./kubectl/V2-individual-secret-file/deployment_v2.yaml
+kubectl get pods
 
 /* to explore pod filessytem*/
-kubectl get pods
 kubectl exec --stdin --tty k8-dep-685dc8f687-hv5x6 -- /bin/sh
 >exit
 kubectl logs k8-dep-685dc8f687-hv5x6
 /* to explore pod filessytem*/
 
 >>>>>>>launch minikube url
+kubectl port-forward k8-dep-685dc8f687-hv5x6 8081:8080
+http://localhost:8000/keys
+
+
+/***** create from files ******/
+# kubectl create configmap k8-config --from-literal=hello="Hello literal" --from-file=./my-configs/
+# kubectl create secret generic k8-secret --from-file=./my-secrets/
+# kubectl get configmaps k8-config -o yaml
+# kubectl get secret k8-secret -o yaml
+
+# kubectl apply -f configmap.yaml
+# kubectl apply -f deployment.yaml
+# kubectl apply -f service.yaml
+/****************************************/
+
 kubectl get services
 minikube service k8-svc --url
-kubectl port-forward k8-dep-7bdb7ff466-bdjtd 9000:8080
-http://localhost:9000/keys
 
 #################################################
 #####debugging / testing containers commands#####

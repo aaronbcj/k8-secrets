@@ -6,10 +6,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class KeyValueDev implements KeyValue {
 	
-	@Value("${config.key:emptydev}")
+	@Value("${app.key2:DEV-EMPTY}")
 	private String key;
 	public String getKey()
 	{
-		return key;
+		return "KeyValueDev:"+key;
 	}
 }

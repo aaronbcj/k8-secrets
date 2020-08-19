@@ -1,1 +1,1 @@
-org.springframework.boot.env.EnvironmentPostProcessor=com.aaronbcj.k8ssecrets.SpringAutoProfileInjector,com.aaronbcj.k8ssecrets.FromFilePostProcessor
+org.springframework.boot.env.EnvironmentPostProcessor=com.aaronbcj.k8ssecrets.SpringAutoProfileInjector,com.aaronbcj.k8ssecrets.CXPConfigPostProcessor

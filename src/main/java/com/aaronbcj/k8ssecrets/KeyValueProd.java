@@ -6,10 +6,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class KeyValueProd implements KeyValue {
 	
-	@Value("${config.key:emptyprod}")
+	@Value("${app.key3:PROD-EMPTY}")
 	private String key;
 	public String getKey()
 	{
-		return key;
+		return "KeyValueProd:"+key;
 	}
+
 }

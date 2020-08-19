@@ -1,0 +1,138 @@
+### serviceaccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: configsecret
+automountServiceAccountToken: true  
+
+---
+### clusterrole
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: config-secret-role
+rules:
+- apiGroups: [""]
+  resources: ["configmap", "secrets"]
+  resourceNames: ["k8-config","k8-secret"]
+  verbs: ["update", "get", "watch", "list"]
+
+---
+### clusterrolebinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: config-secret-binder
+subjects:
+  - kind: ServiceAccount
+    name: configsecret
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin #config-secret-role
+  apiGroup: ""
+
+---
+### configmap
+### kubectl create configmap k8-config --from-file=./my-configs/
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: k8-config
+  namespace: default
+data:
+  application-dev.properties: app.key2=from application-dev.properties
+  application.properties: "app.key1=from application.properties\r\napp.key2=from
+    application.properties\r\napp.key3=from application.properties"
+  application-prod.properties: app.key3=from application-prod.properties
+  cxp-browse-domain-dev.yml: browse.key2=from cxp-browse-domain-dev.yml
+  cxp-browse-domain-prod.yml: browse.key3=from cxp-browse-domain-prod.yml
+  cxp-browse-domain.yml: "browse.key1=from cxp-browse-domain.yml\r\nbrowse.key2=from
+    cxp-browse-domain.yml\r\nbrowse.key3=from cxp-browse-domain.yml"
+
+---
+### Creating secret with all keys from all files merged into single env file
+### since --from-env-file expects single file only
+### combined all yamls into single properties file since --from-env-file expects key=value format
+### while combining, for keys present in both files, value from generic(outbound) file is overwritten by value from specific(-nsdev) file
+### Finally used the merged file to create secret(or sealed secret)
+### kubectl create secret generic k8-secret --from-env-file=./merged-secret-prod.properties
+kind: Secret
+apiVersion: v1
+metadata:
+  name: k8-secret
+  namespace: default
+data:
+  secret.location1: ZnJvbSBzZWNyZXQueW1s
+  secret.location2: ZnJvbSBzZWNyZXQueW1s
+  secret.location3: ZnJvbSBzZWNyZXQtcHJvZC55bWw=
+
+---
+### deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8-dep
+  namespace: default
+  labels:
+    app: k8-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8-dep
+  template:
+    metadata:
+      labels:
+        app: k8-dep
+    spec:
+      serviceAccountName: configsecret
+      automountServiceAccountToken: true
+      containers:
+      - name: k8-dep
+        image: aaronbcj/k8s-sec-img:1.0
+        ports:
+        - containerPort: 8080
+        args: ["--spring.profiles.active=prod"]
+        imagePullPolicy: Always
+        env:
+        - name: ENV_ACCESS_TOKEN
+          value: from deployment yml 
+        volumeMounts:
+        - name: configmnt
+          mountPath: /etc/cnfsec
+        - name: secretmnt
+          mountPath: /etc
+          subPath: /cnfsec
+          readOnly: true
+      volumes:
+      - name: configmnt
+        configMap:
+          name: k8-config
+      - name: secretmnt
+        secret:
+          secretName: k8-secret
+---
+### kubectl expose deployment k8-dep --type=NodePort --name=k8-svc
+### kubectl get service k8-svc -o yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: k8-dep
+  name: k8-svc
+  namespace: default
+spec:
+  clusterIP: 10.104.22.244
+  externalTrafficPolicy: Cluster
+  ports:
+  - nodePort: 32662
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: k8-dep
+  sessionAffinity: None
+  type: NodePort
+status:
+  loadBalancer: {}
