@@ -19,7 +19,7 @@ import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.StandardEnvironment;
 
 
-public class CXPConfigPostProcessor implements EnvironmentPostProcessor, Ordered {
+public class K8PostProcessor implements EnvironmentPostProcessor, Ordered {
 
 	private static final Logger logger = LoggerFactory.getLogger(CXPConfigPostProcessor.class);
 	
