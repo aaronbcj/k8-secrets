@@ -22,7 +22,7 @@ import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 
 @Configuration
-public class SpringAutoProfileInjector implements EnvironmentPostProcessor, Ordered {
+public class LocalPostProcessor implements EnvironmentPostProcessor, Ordered {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringAutoProfileInjector.class);
 	
